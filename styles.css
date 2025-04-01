@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Display:ital,wght@0,100..900;1,100..900&display=swap');
+
+/* CSS HEX */
+:root {
+    --seasalt: #F7F6F4ff;
+    --white: #FDFEFEff;
+    --alice-blue: #F0F6FAff;
+    --dim-gray: #68616Bff;
+    --oxford-blue: #071336ff;
+}
+
+body {
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    background-color: var(--alice-blue);
+}
+
+h2 {
+    color: var(--oxford-blue)
+}
+
+header {
+    background-color: var(--oxford-blue);
+    text-align: center;
+    position: relative;
+    width: 100%;
+}
+
+.header-title {
+    color: var(--white);
+    width: 100%;
+    display: inline-block;
+    padding: 2px 0px;
+    position: sticky;
+    top: 0px;
+}
+
+.container {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+}
+
+.article {
+    background-color: var(--white);
+    width: 80%;
+    height: 100%;
+    color: var(--dim-gray);
+    padding: 5% 10%;
+    box-sizing: border-box;
+    line-height: 1.5;
+    margin: 0 auto;
+    margin-top: 5%;
+}
+
+.form {
+    background-color: var(--white);
+    width: 50%;
+    height: 100%;
+    color: var(--dim-gray);
+    padding: 5% 10%;
+    box-sizing: border-box;
+    margin: 0 auto;
+    margin-top: 5%; 
+    line-height: 1.5;
+}
+
+.form input[type=text] {
+    width: 100%;
+    padding: 4%;
+    border-style: groove;
+    border-color: var(--oxford-blue);
+    border-radius: 5px;
+    box-sizing: border-box;
+    margin-bottom: 5%;
+}
+
+.form input[type=number] {
+    width: 100%;
+    padding: 4%;
+    border-style: groove;
+    border-color: var(--oxford-blue);
+    border-radius: 5px;
+    box-sizing: border-box;
+    margin-bottom: 5%;
+}
