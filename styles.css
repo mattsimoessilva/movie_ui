@@ -178,7 +178,7 @@ th {
     color: var(--white);
 }
 
-.movie-card {
+.record-card {
     display: none;
     overflow: hidden;
     grid-template-columns: 40% 60%;
@@ -192,30 +192,30 @@ th {
     height: fit-content;
 }
 
-.movie-info {
+.info {
     padding: 2% 5%;
     box-sizing: border-box;
 }
-.movie-info-row {
+.info-row {
     display: grid;
     grid-template-columns: 50% 50%;
     row-gap: 2%;
 }
 
-.movie-info-label {
+.info-label {
     color: var(--oxford-blue);
     font-weight: bold;
 }
 
-.movie-info-value {
+.info-value {
     text-align: left;
 }
 
-.movie-poster-slot {
+.image-slot {
     height: 100%;
 }
 
-.movie-poster {
+.image {
     object-fit: cover;
     width: 100%;
     height: auto;

@@ -135,6 +135,7 @@ const fetchPeopleAndGenerateRoles = async () => {
         const peopleData = await response.json();
 
         generateDynamicSelects(peopleData.people);
+        insertPerson(peopleData.people);
     } catch (error) {
         console.error("Error fetching people:", error);
     }
@@ -209,30 +210,30 @@ const insertMovie = (movie) => {
     button.innerHTML = `<span>${movie.title}</span>
                         <span class="material-symbols-outlined list-arrow">keyboard_arrow_up</span>`;
 
-    const movieCard = document.createElement('div');
-    movieCard.classList.add('movie-card');
+    const recordCard = document.createElement('div');
+    recordCard.classList.add('record-card');
 
-    const posterSlot = document.createElement('div');
-    posterSlot.classList.add('movie-poster-slot');
+    const imageSlot = document.createElement('div');
+    imageSlot.classList.add('movie-image-slot');
     const poster = document.createElement('img');
-    poster.classList.add('movie-poster');
+    poster.classList.add('image');
     poster.src = movie.poster_url || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
-    posterSlot.appendChild(poster);
+    imageSlot.appendChild(poster);
 
     const infoContainer = document.createElement('div');
-    infoContainer.classList.add('movie-info');
+    infoContainer.classList.add('info');
 
     const staticFields = ["title", "running_time", "budget", "box_office", "release_year"];
     staticFields.forEach(key => {
         const row = document.createElement('div');
-        row.classList.add('movie-info-row');
+        row.classList.add('info-row');
 
         const label = document.createElement('div');
-        label.classList.add('movie-info-label');
+        label.classList.add('info-label');
         label.innerHTML = `<p>${formatLabel(key)}</p>`;
 
         const valueContainer = document.createElement('div');
-        valueContainer.classList.add('movie-info-value');
+        valueContainer.classList.add('info-value');
 
         let formattedValue = movie[key] || "placeholder";
         if (key === "budget" || key === "box_office") formattedValue = formatMoney(movie[key]); 
@@ -248,14 +249,14 @@ const insertMovie = (movie) => {
     Object.entries(movie).forEach(([key, value]) => {
         if (!staticFields.includes(key) && Array.isArray(value)) {
             const row = document.createElement('div');
-            row.classList.add('movie-info-row');
+            row.classList.add('info-row');
 
             const label = document.createElement('div');
-            label.classList.add('movie-info-label');
+            label.classList.add('info-label');
             label.innerHTML = `<p>${formatLabel(key)}</p>`;
 
             const valueContainer = document.createElement('div');
-            valueContainer.classList.add('movie-info-value');
+            valueContainer.classList.add('info-value');
 
             value.forEach(person => {
                 const personEntry = document.createElement('p');
@@ -269,10 +270,57 @@ const insertMovie = (movie) => {
         }
     });
 
-    movieCard.appendChild(posterSlot);
-    movieCard.appendChild(infoContainer);
+    recordCard.appendChild(imageSlot);
+    recordCard.appendChild(infoContainer);
     buttonCardPair.appendChild(button);
-    buttonCardPair.appendChild(movieCard);
+    buttonCardPair.appendChild(recordCard);
     movieList.appendChild(buttonCardPair);
 };
 
+const insertPerson = (person) => {
+    const personList = document.querySelector('.person-list');
+
+    const buttonCardPair = document.createElement('div');
+    buttonCardPair.classList.add('button-card-pair');
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.classList.add('collapsible');
+    button.innerHTML = `<span>${person.name}</span>
+                        <span class="material-symbols-outlined list-arrow">keyboard_arrow_up</span>`;
+    
+    const recordCard = document.createElement('div');
+    recordCard.classList.add('record-card');
+
+    const imageSlot = document.createElement('div');
+    imageSlot.classList.add('image-slot');
+    const image = document.createElement('img');
+    image.classList.add('image');
+    image.src = person.picture_url || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
+    imageSlot.appendChild(image);
+
+    const infoContainer = document.createElement('div');
+    infoContainer.classList.add('info');
+
+    const staticFields = ["name", "picture_url"];
+    staticFields.forEach(key => {
+        const row = document.createElement('div');
+        row.classList.add('info-row');
+
+        const label = document.createElement('div');
+        label.classList.add('info-label');
+        label.innerHTML = `<p>${formatLabel(key)}</p>`;
+
+        const valueContainer = document.createElement('div');
+        valueContainer.classList.add('info-value');
+
+        let formattedValue = person[key] || "placeholder";
+
+        valueContainer.innerHTML = `<p>${formattedValue}</p>`;
+
+        row.appendChild(label);
+        row.appendChild(valueContainer);
+        infoContainer.appendChild(row);
+    });
+
+}
