@@ -62,7 +62,7 @@ header {
     color: var(--oxford-blue);
 }
 
-.form {
+.movie-form, .person-form {
     display: grid;
     grid-template-columns: 1fr;
     background-color: var(--oxford-blue);
@@ -77,7 +77,7 @@ header {
     margin: 0;
 }
 
-.form h2 {
+.movie-form h2, .person-form h2 {
     color: var(--white);
 }
 
@@ -89,7 +89,7 @@ input:focus {
     outline: 2px solid var(--alice-blue);
 }
 
-.form input[type=text] {
+.movie-form input[type=text], .person-form input[type=text] {
     width: 100%;
     padding: 4%;
     border-style: groove;
@@ -99,7 +99,7 @@ input:focus {
     margin-bottom: 5%;
 }
 
-.form input[type=number] {
+.movie-form input[type=number], .person-form input[type=number] {
     width: 100%;
     padding: 4%;
     border-style: groove;
@@ -134,7 +134,22 @@ select option:checked {
     color: var(--white);
 }
 
-.registerBtn {
+.registerMovieBtn {
+    padding: 5%;
+    background-color: var(--white);
+    color: var(--oxford-blue);
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+    border-radius: 5px;
+    font-weight: bold;
+    width: 50%;
+    margin: 0 auto;
+    border: none;
+    font-size: large;
+}
+
+.registerPersonBtn {
     padding: 5%;
     background-color: var(--white);
     color: var(--oxford-blue);
@@ -180,7 +195,6 @@ th {
 
 .record-card {
     display: none;
-    overflow: hidden;
     grid-template-columns: 40% 60%;
     width: 100%;
     border-radius: 5px;
@@ -188,7 +202,6 @@ th {
     background-color: var(--seasalt);
     box-sizing: border-box;
     padding: 2%;
-    align-items: start;
     height: fit-content;
 }
 
@@ -209,6 +222,8 @@ th {
 
 .info-value {
     text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .image-slot {
@@ -255,7 +270,7 @@ th {
         display: block;
     }
 
-    .form {
+    .movie-form, .person-form {
         margin: 0 auto;
         width: 100%;
         margin-top: 10%;

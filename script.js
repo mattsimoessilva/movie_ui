@@ -42,12 +42,12 @@ const updateMovieList = async () => {
 
 
 const newMovie = () => {
-    let title = document.getElementById("newTitle").value;
-    let posterUrl = document.getElementById("newPosterUrl").value;
-    let runningTime = document.getElementById("newRunningTime").value;
-    let budget = document.getElementById("newBudget").value;
-    let boxOffice = document.getElementById("newBoxOffice").value;
-    let releaseYear = document.getElementById("newReleaseYear").value;
+    let title = document.getElementById("newMovieTitle").value;
+    let posterUrl = document.getElementById("newMoviePosterUrl").value;
+    let runningTime = document.getElementById("newMovieRunningTime").value;
+    let budget = document.getElementById("newMovieBudget").value;
+    let boxOffice = document.getElementById("newMovieBoxOffice").value;
+    let releaseYear = document.getElementById("newMovieReleaseYear").value;
 
     let selectedPeople = [];
     document.querySelectorAll("select[multiple]").forEach(select => {
@@ -134,16 +134,16 @@ const fetchPeopleAndGenerateRoles = async () => {
         const response = await fetch("http://127.0.0.1:5000/people");
         const peopleData = await response.json();
 
-        generateDynamicSelects(peopleData.people);
-        insertPerson(peopleData.people);
+        generatePersonSelect(peopleData.people);
+        peopleData.people.forEach(item => insertPerson({...item}));
     } catch (error) {
         console.error("Error fetching people:", error);
     }
 };
 
-const generateDynamicSelects = (people) => {
-    const form = document.querySelector('.form'); 
-    const submitButton = document.querySelector('.registerBtn'); 
+const generatePersonSelect = (people) => {
+    const form = document.querySelector('.movie-form'); 
+    const submitButton = document.querySelector('.registerMovieBtn'); 
     const rolesMap = {};
 
     people.forEach(person => {
@@ -277,6 +277,8 @@ const insertMovie = (movie) => {
     movieList.appendChild(buttonCardPair);
 };
 
+// PERSON METHODS
+
 const insertPerson = (person) => {
     const personList = document.querySelector('.person-list');
 
@@ -323,4 +325,57 @@ const insertPerson = (person) => {
         infoContainer.appendChild(row);
     });
 
+    Object.entries(person).forEach(([key, value]) => {
+        if (!staticFields.includes(key) && Array.isArray(value)) {
+            const row = document.createElement('div');
+            row.classList.add('info-row');
+
+            const label = document.createElement('div');
+            label.classList.add('info-label');
+            label.innerHTML = `<p>${formatLabel(key)}</p>`;
+
+            const valueContainer = document.createElement('div');
+            valueContainer.classList.add('info-value');
+
+            value.forEach(role => {
+                const roleEntry = document.createElement('p');
+                roleEntry.textContent = role.name;
+                valueContainer.appendChild(roleEntry);
+            })
+
+            row.appendChild(label);
+            row.appendChild(valueContainer);
+            infoContainer.appendChild(row);
+        }
+    })
+
+    recordCard.appendChild(imageSlot);
+    recordCard.appendChild(infoContainer);
+    buttonCardPair.appendChild(button);
+    buttonCardPair.appendChild(recordCard);
+    personList.appendChild(buttonCardPair);
+}
+
+const generateRoleSelect = (roles) => {
+    const form = document.querySelector('.person-form');
+    const submitButton = document.querySelector('.registerPersonBtn');
+    
+    roles.forEach(role => {
+        const fieldName = 'Roles';
+
+        const label = document.createElement("label");
+        label.textContent = fieldName;
+
+        const select = document.createElement("select");
+        select.id = "role";
+        select.name = "role[]";
+        select.multiple = true;
+    })
+}
+
+const newPerson = () => {
+    let name = document.getElementById("newPersonName").value;
+    let picture_url = document.getElementById("newPersonPictureUrl").value;
+
+    let selectedRoles = [];
 }
