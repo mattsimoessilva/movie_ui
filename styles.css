@@ -67,7 +67,7 @@ header {
     grid-template-columns: 1fr;
     background-color: var(--oxford-blue);
     width: 100%;
-    height: 100%;
+    height: fit-content;
     color: var(--dim-gray);
     padding: 5% 10%;
     box-sizing: border-box;
@@ -112,9 +112,11 @@ input:focus {
 .input-table-area {
     display: grid;
     grid-template-columns: 40% 60%;
+    grid-auto-rows: minmax(100vh, auto);
     column-gap: 5%;
-    margin-top: 5%; 
+    margin-top: 10%; 
     box-sizing: border-box;
+    height: auto;
 }
 
 select {

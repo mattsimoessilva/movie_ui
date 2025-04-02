@@ -1,3 +1,53 @@
+class Movie {
+    constructor(title, poster_url, running_time, budget, box_office, release_year, people = []) {
+        this.title = title;
+        this.poster_url = poster_url;
+        this.running_time = running_time;
+        this.budget = budget;
+        this.box_office = box_office;
+        this.release_year = release_year;
+        this.people = people;
+    }
+
+    static singular() {
+        return "movie";
+    }
+
+    static plural() {
+        return "movies";
+    }
+}
+
+class Person {
+    constructor(name, picture_url) {
+        this.name = name;
+        this.picture_url = picture_url;
+    }
+
+    static singular() {
+        return "person"
+    }
+
+    static plural() {
+        return "people"
+    }
+}
+
+class Role {
+    constructor(name, description) {
+        this.name = name;
+        this.description = description;
+    }
+
+    static singular() {
+        return "role"
+    }
+
+    static plural() {
+        return "roles"
+    }
+}
+
 document.addEventListener("click", (event) => {
     if (event.target.classList.contains("collapsible")) {
         event.target.classList.toggle("active");
@@ -7,76 +57,82 @@ document.addEventListener("click", (event) => {
     }
 });
 
-const getMovies = async () => {
-    let url = 'http://127.0.0.1:5000/movies';
-    fetch(url, {
-        method: 'get',
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            data.movies.forEach(item => insertMovie({...item}));
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        })
-}
-
-getMovies()
-
-const updateMovieList = async () => {
+const fetchRecords = async (type) => {
     try {
-        const response = await fetch("http://127.0.0.1:5000/movies");
-        const movieData = await response.json();
+        const response = await fetch(`http://127.0.0.1:5000/${type.plural()}`);
+        const data = await response.json();
 
-        const movieList = document.querySelector('.movie-list');
-        movieList.innerHTML = ''; 
-
-        movieData.movies.forEach(movie => {
-            insertMovie(movie); 
-        });
-
+        if (type === Person) {
+            generatePersonSelect(data.people);
+            data.people.forEach(item => insertRecord(item, type));
+        } else if (type === Movie) {
+            data.movies.forEach(item => insertRecord(item, type));
+        } else if (type === Role) {
+            generateRoleSelect(data.roles);
+            //data.roles.forEach(item => insertRecord(item, type));
+        }
     } catch (error) {
-        console.error("Error fetching movies:", error);
+        console.error(`Error fetching ${type.plural()}:`, error);
     }
 };
 
+fetchRecords(Movie);
 
-const newMovie = () => {
-    let title = document.getElementById("newMovieTitle").value;
-    let posterUrl = document.getElementById("newMoviePosterUrl").value;
-    let runningTime = document.getElementById("newMovieRunningTime").value;
-    let budget = document.getElementById("newMovieBudget").value;
-    let boxOffice = document.getElementById("newMovieBoxOffice").value;
-    let releaseYear = document.getElementById("newMovieReleaseYear").value;
+fetchRecords(Person);
 
-    let selectedPeople = [];
-    document.querySelectorAll("select[multiple]").forEach(select => {
-        const selectedOptions = Array.from(select.selectedOptions).map(option => option.value);
-        selectedPeople.push(...selectedOptions);
+fetchRecords(Role);
+
+
+const updateRecordList = async (type) => {
+    try {
+        const response = await fetch(`http://127.0.0.1:5000/${type.plural()}`);
+        const data = await response.json();
+
+        const list = document.querySelector(`.${type.singular()}-list`);
+        list.innerHTML = ''; 
+
+        data[type.plural()].forEach(item => {
+            insertRecord(item, type);
+        });
+
+    } catch (error) {
+        console.error(`Error fetching ${type.plural()}:`, error);
+    }
+};
+
+const newRecord = (type) => {
+    const form = document.querySelector(`.${type.singular()}-form`);
+    const inputs = form.querySelectorAll("input, select[multiple]");
+
+    console.log(document.getElementById("newPersonName").value);
+    console.log(inputs.values);
+
+    let recordData = {};
+
+    inputs.forEach(input => {
+        if (input.type === "number") {
+            recordData[input.name] = parseFloat(input.value) || 0;
+        } else if (input.tagName === "SELECT" && input.multiple) {
+            recordData[input.name] = Array.from(input.selectedOptions).map(option => option.value);
+        } else {
+            recordData[input.name] = input.value || "";
+        }
     });
 
-    if (title === '') {
-        alert("Please enter a movie title!");
-    } else if (isNaN(runningTime) || isNaN(budget) || isNaN(boxOffice) || isNaN(releaseYear)) {
-        alert("Running time, budget, box office, and release year must be numbers!");
-    } else {
-        const movieData = {
-            title,
-            poster_url: posterUrl,
-            running_time: parseInt(runningTime),
-            budget: parseFloat(budget),
-            box_office: parseFloat(boxOffice),
-            release_year: parseInt(releaseYear),
-            people: selectedPeople 
-        };
+    console.log(recordData);
 
-        insertMovie(movieData);
-        postMovie(movieData).then(() => {
-            updateMovieList();
-            clearForm();
-        });
-        alert("Movie added!");
+    if (!recordData.name) {
+        alert(`Please enter a valid ${type.singular()} name!`);
+        return;
     }
+
+    insertRecord(recordData, type);
+    postRecord(type, recordData).then(() => {
+        updateRecordList(type);
+        form.reset();
+    });
+
+    alert(`${type.singular()} added!`);
 };
 
 const clearForm = () => {
@@ -92,22 +148,19 @@ const clearForm = () => {
     });
 };
 
-const postMovie = async (movieData) => {
+const postRecord = async (type, recordData) => {
     try {
         const formData = new FormData();
 
-        formData.append("title", movieData.title);
-        formData.append("poster_url", movieData.poster_url);
-        formData.append("running_time", movieData.running_time);
-        formData.append("budget", movieData.budget);
-        formData.append("box_office", movieData.box_office);
-        formData.append("release_year", movieData.release_year);
-
-        movieData.people.forEach(personId => {
-            formData.append("people", personId);
+        Object.entries(recordData).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+                value.forEach(item => formData.append(key, item));
+            } else {
+                formData.append(key, value);
+            }
         });
 
-        const response = await fetch("http://127.0.0.1:5000/movie", {
+        const response = await fetch(`http://127.0.0.1:5000/${type.singular()}`, {
             method: "POST",
             body: formData
         });
@@ -115,29 +168,14 @@ const postMovie = async (movieData) => {
         const result = await response.json();
 
         if (response.ok) {
-            alert("Movie successfully registered!");
-            updateMovieList();
+            alert(`${type.singular()} successfully registered!`);
+            updateRecordList(type);
         } else {
             alert(`Error: ${result.message}`);
         }
     } catch (error) {
-        console.error("Error adding movie:", error);
-        alert("An error occurred while adding the movie.");
-    }
-};
-
-
-
-
-const fetchPeopleAndGenerateRoles = async () => {
-    try {
-        const response = await fetch("http://127.0.0.1:5000/people");
-        const peopleData = await response.json();
-
-        generatePersonSelect(peopleData.people);
-        peopleData.people.forEach(item => insertPerson({...item}));
-    } catch (error) {
-        console.error("Error fetching people:", error);
+        console.error(`Error adding ${type.singular()}:`, error);
+        alert(`An error occurred while adding the ${type.singular()}.`);
     }
 };
 
@@ -178,8 +216,6 @@ const generatePersonSelect = (people) => {
     });
 };
 
-fetchPeopleAndGenerateRoles()
-
 const formatRoleName = (role) => {
     return role.replace(/_/g, ' ')
                .replace(/\b\w/g, (char) => char.toUpperCase());
@@ -198,8 +234,8 @@ const formatLabel = (label) => {
                 .replace(/\b\w/g, (char) => char.toUpperCase()); 
 };
 
-const insertMovie = (movie) => {
-    const movieList = document.querySelector('.movie-list');
+const insertRecord = (record, type) => {
+    const list = document.querySelector(`.${type.singular()}-list`);
 
     const buttonCardPair = document.createElement('div');
     buttonCardPair.classList.add('button-card-pair');
@@ -207,90 +243,9 @@ const insertMovie = (movie) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.classList.add('collapsible');
-    button.innerHTML = `<span>${movie.title}</span>
+    button.innerHTML = `<span>${record.name || record.title}</span>
                         <span class="material-symbols-outlined list-arrow">keyboard_arrow_up</span>`;
 
-    const recordCard = document.createElement('div');
-    recordCard.classList.add('record-card');
-
-    const imageSlot = document.createElement('div');
-    imageSlot.classList.add('movie-image-slot');
-    const poster = document.createElement('img');
-    poster.classList.add('image');
-    poster.src = movie.poster_url || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
-    imageSlot.appendChild(poster);
-
-    const infoContainer = document.createElement('div');
-    infoContainer.classList.add('info');
-
-    const staticFields = ["title", "running_time", "budget", "box_office", "release_year"];
-    staticFields.forEach(key => {
-        const row = document.createElement('div');
-        row.classList.add('info-row');
-
-        const label = document.createElement('div');
-        label.classList.add('info-label');
-        label.innerHTML = `<p>${formatLabel(key)}</p>`;
-
-        const valueContainer = document.createElement('div');
-        valueContainer.classList.add('info-value');
-
-        let formattedValue = movie[key] || "placeholder";
-        if (key === "budget" || key === "box_office") formattedValue = formatMoney(movie[key]); 
-        if (key === "running_time") formattedValue = `${formatNumber(movie[key])} min`; 
-
-        valueContainer.innerHTML = `<p>${formattedValue}</p>`;
-
-        row.appendChild(label);
-        row.appendChild(valueContainer);
-        infoContainer.appendChild(row);
-    });
-
-    Object.entries(movie).forEach(([key, value]) => {
-        if (!staticFields.includes(key) && Array.isArray(value)) {
-            const row = document.createElement('div');
-            row.classList.add('info-row');
-
-            const label = document.createElement('div');
-            label.classList.add('info-label');
-            label.innerHTML = `<p>${formatLabel(key)}</p>`;
-
-            const valueContainer = document.createElement('div');
-            valueContainer.classList.add('info-value');
-
-            value.forEach(person => {
-                const personEntry = document.createElement('p');
-                personEntry.textContent = person.name;
-                valueContainer.appendChild(personEntry);
-            });
-
-            row.appendChild(label);
-            row.appendChild(valueContainer);
-            infoContainer.appendChild(row);
-        }
-    });
-
-    recordCard.appendChild(imageSlot);
-    recordCard.appendChild(infoContainer);
-    buttonCardPair.appendChild(button);
-    buttonCardPair.appendChild(recordCard);
-    movieList.appendChild(buttonCardPair);
-};
-
-// PERSON METHODS
-
-const insertPerson = (person) => {
-    const personList = document.querySelector('.person-list');
-
-    const buttonCardPair = document.createElement('div');
-    buttonCardPair.classList.add('button-card-pair');
-
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.classList.add('collapsible');
-    button.innerHTML = `<span>${person.name}</span>
-                        <span class="material-symbols-outlined list-arrow">keyboard_arrow_up</span>`;
-    
     const recordCard = document.createElement('div');
     recordCard.classList.add('record-card');
 
@@ -298,14 +253,15 @@ const insertPerson = (person) => {
     imageSlot.classList.add('image-slot');
     const image = document.createElement('img');
     image.classList.add('image');
-    image.src = person.picture_url || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
+    image.src = record.image || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
     imageSlot.appendChild(image);
 
     const infoContainer = document.createElement('div');
     infoContainer.classList.add('info');
 
-    const staticFields = ["name", "picture_url"];
-    staticFields.forEach(key => {
+    Object.entries(record).forEach(([key, value]) => {
+        if (key == "id") return; // Skip image field
+
         const row = document.createElement('div');
         row.classList.add('info-row');
 
@@ -316,66 +272,56 @@ const insertPerson = (person) => {
         const valueContainer = document.createElement('div');
         valueContainer.classList.add('info-value');
 
-        let formattedValue = person[key] || "placeholder";
+        let formattedValue = value || "placeholder";
+        if (key === "budget" || key === "box_office") formattedValue = formatMoney(value); 
+        if (key === "running_time") formattedValue = `${formatNumber(value)} min`;
 
-        valueContainer.innerHTML = `<p>${formattedValue}</p>`;
+        if (Array.isArray(value)) {
+            value.forEach(entry => {
+                const itemEntry = document.createElement('p');
+                itemEntry.textContent = entry.name || entry.title;
+                valueContainer.appendChild(itemEntry);
+            });
+        } else {
+            valueContainer.innerHTML = `<p>${formattedValue}</p>`;
+        }
 
         row.appendChild(label);
         row.appendChild(valueContainer);
         infoContainer.appendChild(row);
     });
 
-    Object.entries(person).forEach(([key, value]) => {
-        if (!staticFields.includes(key) && Array.isArray(value)) {
-            const row = document.createElement('div');
-            row.classList.add('info-row');
-
-            const label = document.createElement('div');
-            label.classList.add('info-label');
-            label.innerHTML = `<p>${formatLabel(key)}</p>`;
-
-            const valueContainer = document.createElement('div');
-            valueContainer.classList.add('info-value');
-
-            value.forEach(role => {
-                const roleEntry = document.createElement('p');
-                roleEntry.textContent = role.name;
-                valueContainer.appendChild(roleEntry);
-            })
-
-            row.appendChild(label);
-            row.appendChild(valueContainer);
-            infoContainer.appendChild(row);
-        }
-    })
-
     recordCard.appendChild(imageSlot);
     recordCard.appendChild(infoContainer);
     buttonCardPair.appendChild(button);
     buttonCardPair.appendChild(recordCard);
-    personList.appendChild(buttonCardPair);
-}
+    list.appendChild(buttonCardPair);
+};
+
 
 const generateRoleSelect = (roles) => {
+    console.log(roles);
+
     const form = document.querySelector('.person-form');
     const submitButton = document.querySelector('.registerPersonBtn');
     
+    const fieldName = 'Roles';
+
+    const label = document.createElement("label");
+    label.textContent = fieldName;
+
+    const select = document.createElement("select");
+    select.id = "role";
+    select.name = "role[]";
+    select.multiple = true;
+
     roles.forEach(role => {
-        const fieldName = 'Roles';
+        const option = document.createElement("option");
+        option.value = role.id;
+        option.textContent = role.name;
+        select.appendChild(option);
+    });
 
-        const label = document.createElement("label");
-        label.textContent = fieldName;
-
-        const select = document.createElement("select");
-        select.id = "role";
-        select.name = "role[]";
-        select.multiple = true;
-    })
-}
-
-const newPerson = () => {
-    let name = document.getElementById("newPersonName").value;
-    let picture_url = document.getElementById("newPersonPictureUrl").value;
-
-    let selectedRoles = [];
+    form.insertBefore(label, submitButton);
+    form.insertBefore(select, submitButton);
 }
