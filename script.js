@@ -1,7 +1,7 @@
 class Movie {
     constructor(title, poster_url, running_time, budget, box_office, release_year, people = []) {
         this.title = title;
-        this.poster_url = poster_url;
+        this.image_url = poster_url;
         this.running_time = running_time;
         this.budget = budget;
         this.box_office = box_office;
@@ -21,7 +21,7 @@ class Movie {
 class Person {
     constructor(name, picture_url) {
         this.name = name;
-        this.picture_url = picture_url;
+        this.image_url = picture_url;
     }
 
     static singular() {
@@ -104,24 +104,28 @@ const newRecord = (type) => {
     const form = document.querySelector(`.${type.singular()}-form`);
     const inputs = form.querySelectorAll("input, select[multiple]");
 
-    console.log(document.getElementById("newPersonName").value);
-    console.log(inputs.values);
-
     let recordData = {};
 
     inputs.forEach(input => {
         if (input.type === "number") {
             recordData[input.name] = parseFloat(input.value) || 0;
         } else if (input.tagName === "SELECT" && input.multiple) {
-            recordData[input.name] = Array.from(input.selectedOptions).map(option => option.value);
+            if (type === Movie) {
+                recordData["people"] = (recordData["people"] || []).concat(
+                    Array.from(input.selectedOptions).map(option => option.value)
+                );
+            } else {
+                recordData[input.name] = Array.from(input.selectedOptions).map(option => option.value);
+            }
         } else {
             recordData[input.name] = input.value || "";
         }
     });
+    
 
     console.log(recordData);
 
-    if (!recordData.name) {
+    if (!recordData.name && !recordData.title) {
         alert(`Please enter a valid ${type.singular()} name!`);
         return;
     }
@@ -153,12 +157,14 @@ const postRecord = async (type, recordData) => {
         const formData = new FormData();
 
         Object.entries(recordData).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
+            if (Array.isArray(value) && value.length > 0) {
                 value.forEach(item => formData.append(key, item));
-            } else {
+            } else if (value !== undefined && value !== null) {
                 formData.append(key, value);
             }
         });
+
+        console.log(formData);
 
         const response = await fetch(`http://127.0.0.1:5000/${type.singular()}`, {
             method: "POST",
@@ -178,6 +184,7 @@ const postRecord = async (type, recordData) => {
         alert(`An error occurred while adding the ${type.singular()}.`);
     }
 };
+
 
 const generatePersonSelect = (people) => {
     const form = document.querySelector('.movie-form'); 
@@ -201,7 +208,7 @@ const generatePersonSelect = (people) => {
 
         const select = document.createElement("select");
         select.id = roleName.replace(/\s+/g, '_').toLowerCase();
-        select.name = `${roleName.replace(/\s+/g, '_').toLowerCase()}[]`;
+        select.name = `${roleName.replace(/\s+/g, '_').toLowerCase()}s`;
         select.multiple = true; 
 
         rolePeople.forEach(person => {
@@ -253,7 +260,7 @@ const insertRecord = (record, type) => {
     imageSlot.classList.add('image-slot');
     const image = document.createElement('img');
     image.classList.add('image');
-    image.src = record.image || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
+    image.src = record.image_url || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
     imageSlot.appendChild(image);
 
     const infoContainer = document.createElement('div');
@@ -312,7 +319,7 @@ const generateRoleSelect = (roles) => {
 
     const select = document.createElement("select");
     select.id = "role";
-    select.name = "role[]";
+    select.name = "roles";
     select.multiple = true;
 
     roles.forEach(role => {
