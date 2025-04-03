@@ -69,7 +69,7 @@ const fetchRecords = async (type) => {
             data.movies.forEach(item => insertRecord(item, type));
         } else if (type === Role) {
             generateRoleSelect(data.roles);
-            //data.roles.forEach(item => insertRecord(item, type));
+            data.roles.forEach(item => insertRecord(item, type));
         }
     } catch (error) {
         console.error(`Error fetching ${type.plural()}:`, error);
@@ -121,9 +121,6 @@ const newRecord = (type) => {
             recordData[input.name] = input.value || "";
         }
     });
-    
-
-    console.log(recordData);
 
     if (!recordData.name && !recordData.title) {
         alert(`Please enter a valid ${type.singular()} name!`);
@@ -163,8 +160,6 @@ const postRecord = async (type, recordData) => {
                 formData.append(key, value);
             }
         });
-
-        console.log(formData);
 
         const response = await fetch(`http://127.0.0.1:5000/${type.singular()}`, {
             method: "POST",
@@ -256,12 +251,16 @@ const insertRecord = (record, type) => {
     const recordCard = document.createElement('div');
     recordCard.classList.add('record-card');
 
-    const imageSlot = document.createElement('div');
-    imageSlot.classList.add('image-slot');
-    const image = document.createElement('img');
-    image.classList.add('image');
-    image.src = record.image_url || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
-    imageSlot.appendChild(image);
+    if (record.image_url) {
+        record.classList.add('two-column');
+        const imageSlot = document.createElement('div');
+        imageSlot.classList.add('image-slot');
+        const image = document.createElement('img');
+        image.classList.add('image');
+        image.src = record.image_url || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
+        imageSlot.appendChild(image);
+        recordCard.appendChild(imageSlot);
+    }
 
     const infoContainer = document.createElement('div');
     infoContainer.classList.add('info');
@@ -298,7 +297,6 @@ const insertRecord = (record, type) => {
         infoContainer.appendChild(row);
     });
 
-    recordCard.appendChild(imageSlot);
     recordCard.appendChild(infoContainer);
     buttonCardPair.appendChild(button);
     buttonCardPair.appendChild(recordCard);
@@ -307,7 +305,6 @@ const insertRecord = (record, type) => {
 
 
 const generateRoleSelect = (roles) => {
-    console.log(roles);
 
     const form = document.querySelector('.person-form');
     const submitButton = document.querySelector('.registerPersonBtn');

@@ -62,7 +62,7 @@ header {
     color: var(--oxford-blue);
 }
 
-.movie-form, .person-form {
+.movie-form, .person-form, .role-form {
     display: grid;
     grid-template-columns: 1fr;
     background-color: var(--oxford-blue);
@@ -77,7 +77,7 @@ header {
     margin: 0;
 }
 
-.movie-form h2, .person-form h2 {
+.movie-form h2, .person-form h2, .role-form h2 {
     color: var(--white);
 }
 
@@ -89,7 +89,7 @@ input:focus {
     outline: 2px solid var(--alice-blue);
 }
 
-.movie-form input[type=text], .person-form input[type=text] {
+.movie-form input[type=text], .person-form input[type=text], .role-form input[type=text] {
     width: 100%;
     padding: 4%;
     border-style: groove;
@@ -136,22 +136,7 @@ select option:checked {
     color: var(--white);
 }
 
-.registerMovieBtn {
-    padding: 5%;
-    background-color: var(--white);
-    color: var(--oxford-blue);
-    text-align: center;
-    cursor: pointer;
-    transition: 0.3s;
-    border-radius: 5px;
-    font-weight: bold;
-    width: 50%;
-    margin: 0 auto;
-    border: none;
-    font-size: large;
-}
-
-.registerPersonBtn {
+.registerMovieBtn, .registerPersonBtn, .registerRoleBtn {
     padding: 5%;
     background-color: var(--white);
     color: var(--oxford-blue);
@@ -197,7 +182,7 @@ th {
 
 .record-card {
     display: none;
-    grid-template-columns: 40% 60%;
+    grid-template-columns: 100%;
     width: 100%;
     border-radius: 5px;
     font-size: smaller;
@@ -207,10 +192,15 @@ th {
     height: fit-content;
 }
 
+.two-column {
+    grid-template-columns: 40% 60%;
+}
+
 .info {
     padding: 2% 5%;
     box-sizing: border-box;
 }
+
 .info-row {
     display: grid;
     grid-template-columns: 50% 50%;
@@ -266,13 +256,24 @@ th {
     transform: rotate(180deg);
 }
 
+textarea {
+    width: 100%;
+    padding: 4%;
+    border-style: groove;
+    border-color: var(--oxford-blue);
+    border-radius: 5px;
+    box-sizing: border-box;
+    margin-bottom: 5%;
+    height: 20vh;
+    text-align: left;
+}
 
 @media(max-width: 768px) {
     .input-table-area {
         display: block;
     }
 
-    .movie-form, .person-form {
+    .movie-form, .person-form, .role-form {
         margin: 0 auto;
         width: 100%;
         margin-top: 10%;
