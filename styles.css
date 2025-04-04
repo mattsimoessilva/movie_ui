@@ -122,6 +122,9 @@ input:focus {
 select {
     margin-bottom: 5%;
     padding: 4%;
+    border-style: groove;
+    border: 2px solid var(--oxford-blue);
+    width: 100%;
 }
 
 select:focus {
@@ -149,6 +152,40 @@ select option:checked {
     margin: 0 auto;
     border: none;
     font-size: large;
+}
+
+.updateMovieBtn, .updatePersonBtn, .updateRoleBtn {
+    padding: 5%;
+    background-color: var(--oxford-blue);
+    color: var(--white);
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+    border-radius: 5px;
+    font-weight: bold;
+    width: 120px;
+    height: 40px;
+    border: none;
+    font-size: small;
+    margin: 0 auto;
+    margin-top: 5%;
+}
+
+.deleteMovieBtn, .deletePersonBtn, .deleteRoleBtn {
+    padding: 5%;
+    background-color: darkred;
+    color: var(--white);
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+    border-radius: 5px;
+    font-weight: bold;
+    width: 120px;
+    height: 40px;
+    border: none;
+    font-size: small;
+    margin: 0 auto;
+    margin-top: 5%;
 }
 
 table {
@@ -196,15 +233,35 @@ th {
     grid-template-columns: 40% 60%;
 }
 
-.info {
+.movie-update-form, .person-update-form, .role-update-form {
     padding: 2% 5%;
     box-sizing: border-box;
+    font-size: small;
+}
+
+.movie-update-form input[type=text], .person-update-form input[type=text], .role-update-form input[type=text] {
+    width: 100%;
+    padding: 4%;
+    border-style: groove;
+    border-color: var(--oxford-blue);
+    border-radius: 5px;
+    box-sizing: border-box;
+    margin-bottom: 5%;
 }
 
 .info-row {
     display: grid;
-    grid-template-columns: 50% 50%;
+    grid-template-columns: 40% 60%;
     row-gap: 2%;
+}
+
+.button-row {
+    width: 50%;
+    justify-content: center;
+    text-align: center;
+    display: grid;
+    grid-template-columns: 1fr;
+    margin: 0 auto;
 }
 
 .info-label {
@@ -216,6 +273,7 @@ th {
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
+    margin-top: 5%;
 }
 
 .image-slot {
@@ -257,6 +315,7 @@ th {
 }
 
 textarea {
+    font-family: inherit;
     width: 100%;
     padding: 4%;
     border-style: groove;
@@ -279,4 +338,9 @@ textarea {
         margin-top: 10%;
         padding: 10% 20%;
     }
+
+    .movie-update-form, .person-update-form, .role-update-form {
+        font-size: smaller;
+    }
+
 }

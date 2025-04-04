@@ -48,6 +48,8 @@ class Role {
     }
 }
 
+const recordTypes = [Movie, Person, Role];
+
 document.addEventListener("click", (event) => {
     if (event.target.classList.contains("collapsible")) {
         event.target.classList.toggle("active");
@@ -62,43 +64,45 @@ const fetchRecords = async (type) => {
         const response = await fetch(`http://127.0.0.1:5000/${type.plural()}`);
         const data = await response.json();
 
-        if (type === Person) {
-            generatePersonSelect(data.people);
-            data.people.forEach(item => insertRecord(item, type));
-        } else if (type === Movie) {
-            data.movies.forEach(item => insertRecord(item, type));
-        } else if (type === Role) {
-            generateRoleSelect(data.roles);
-            data.roles.forEach(item => insertRecord(item, type));
-        }
+        return data;
     } catch (error) {
         console.error(`Error fetching ${type.plural()}:`, error);
     }
 };
 
-fetchRecords(Movie);
-
-fetchRecords(Person);
-
-fetchRecords(Role);
-
-
-const updateRecordList = async (type) => {
+const initializeRecords = async () => {
     try {
-        const response = await fetch(`http://127.0.0.1:5000/${type.plural()}`);
-        const data = await response.json();
+        let rolesData = await fetchRecords(Role);
+        let peopleData = await fetchRecords(Person);
+        let moviesData = await fetchRecords(Movie);
 
-        const list = document.querySelector(`.${type.singular()}-list`);
-        list.innerHTML = ''; 
+        generateRoleSelect(rolesData.roles);
+        generatePersonSelect(peopleData.people);
 
-        data[type.plural()].forEach(item => {
-            insertRecord(item, type);
-        });
+        peopleData.people.forEach(item => insertRecord(item, Person, peopleData, rolesData, moviesData));
+        moviesData.movies.forEach(item => insertRecord(item, Movie, peopleData, rolesData));
+        rolesData.roles.forEach(item => insertRecord(item, Role));
 
     } catch (error) {
-        console.error(`Error fetching ${type.plural()}:`, error);
+        console.error("Error fetching records:", error);
     }
 };
+
+document.addEventListener('DOMContentLoaded', initializeRecords);
+
+const cleanList = (type) => {
+    const list = document.querySelector(`.${type.singular()}-list`);
+
+    if (list.hasChildNodes()) {
+        [...list.children].forEach(child => {
+            if (!child.matches("h2")) { // Keep the <h2> title
+                child.remove();
+            }
+        });
+    }
+};
+
+
 
 const newRecord = (type) => {
     const form = document.querySelector(`.${type.singular()}-form`);
@@ -127,14 +131,43 @@ const newRecord = (type) => {
         return;
     }
 
-    insertRecord(recordData, type);
     postRecord(type, recordData).then(() => {
-        updateRecordList(type);
+        updateAllRecordList();
+        if (type == Movie) {
+            repopulatePersonSelect();
+        } else if (type == Person) {
+            repopulatePersonSelect();
+        } else if (type == Role) {
+            repopulateRoleSelect();
+        }
         form.reset();
     });
 
     alert(`${type.singular()} added!`);
 };
+
+const updateAllRecordLists = async () => {
+    try {
+        const fetchedData = await Promise.all(
+            recordTypes.map(type => 
+                fetch(`http://127.0.0.1:5000/${type.plural()}`).then(res => res.json())
+            )
+        );
+
+        recordTypes.forEach((type, index) => {
+            const list = document.querySelector(`.${type.singular()}-list`);
+            list.innerHTML = ''; // Clear previous data
+
+            fetchedData[index][type.plural()].forEach(item => {
+                insertRecord(item, type, fetchedData[1], fetchedData[2]); // Pass people and roles
+            });
+        });
+
+    } catch (error) {
+        console.error("Error updating all record lists:", error);
+    }
+};
+
 
 const clearForm = () => {
     document.getElementById("newTitle").value = "";
@@ -170,7 +203,7 @@ const postRecord = async (type, recordData) => {
 
         if (response.ok) {
             alert(`${type.singular()} successfully registered!`);
-            updateRecordList(type);
+            updateAllRecordLists();
         } else {
             alert(`Error: ${result.message}`);
         }
@@ -218,6 +251,33 @@ const generatePersonSelect = (people) => {
     });
 };
 
+const repopulatePersonSelect = async () => {
+    document.querySelectorAll('.movie-form select').forEach(select => select.remove());
+    document.querySelectorAll('.movie-form label').forEach(label => label.remove());
+
+    try {
+        let peopleData = await fetchRecords(Person);
+        generatePersonSelect(peopleData.people);
+
+    } catch (error) {
+        console.error("Error fetching records:", error);
+    }
+};
+
+const repopulateRoleSelect = async () => {
+    document.querySelectorAll('.person-form select').forEach(select => select.remove());
+    document.querySelectorAll('.person-form label').forEach(label => label.remove());
+
+    try {
+        let rolesData = await fetchRecords(Role);
+        generateRoleSelect(rolesData.roles);
+
+    } catch (error) {
+        console.error("Error fetching roles:", error);
+    }
+};
+
+
 const formatRoleName = (role) => {
     return role.replace(/_/g, ' ')
                .replace(/\b\w/g, (char) => char.toUpperCase());
@@ -236,7 +296,35 @@ const formatLabel = (label) => {
                 .replace(/\b\w/g, (char) => char.toUpperCase()); 
 };
 
-const insertRecord = (record, type) => {
+const mergeUniqueObjectsWithTags = (arr1, arr2, key) => {
+    const merged = [...arr1, ...arr2]; // Combine arrays
+    const uniqueMap = new Map(merged.map(item => [item[key], item])); // Remove duplicates
+    
+    return [...uniqueMap.values()].map(obj => ({
+        ...obj,
+        source: arr1.some(item => item[key] === obj[key]) ? "selected" : "not-selected" // Tag source
+    }));
+};
+
+
+const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
+    const rolesMap = {};
+
+    if (rolesData && peopleData) {
+        rolesData.roles.forEach(role => {
+            rolesMap[role.name] = []
+
+            peopleData.people.forEach(person => {
+                person.roles.forEach(personRole => {
+                    if (role.name == personRole.name) {
+                        rolesMap[role.name].push(person);
+                    }
+                })
+            })
+        })
+    }
+
+
     const list = document.querySelector(`.${type.singular()}-list`);
 
     const buttonCardPair = document.createElement('div');
@@ -252,7 +340,7 @@ const insertRecord = (record, type) => {
     recordCard.classList.add('record-card');
 
     if (record.image_url) {
-        record.classList.add('two-column');
+        recordCard.classList.add('two-column');
         const imageSlot = document.createElement('div');
         imageSlot.classList.add('image-slot');
         const image = document.createElement('img');
@@ -263,45 +351,134 @@ const insertRecord = (record, type) => {
     }
 
     const infoContainer = document.createElement('div');
-    infoContainer.classList.add('info');
+    infoContainer.classList.add(`${type.singular()}-update-form`);
 
+    // Populate form fields
     Object.entries(record).forEach(([key, value]) => {
-        if (key == "id") return; // Skip image field
+        if (key === "id") return; // Skip ID field
+    
+        // Normalize key to match role names in rolesMap
+        const normalizedKey = key.replace(/s$/, ''); // 
+        let capitalizedKey = normalizedKey.charAt(0).toUpperCase() + normalizedKey.slice(1);
 
         const row = document.createElement('div');
         row.classList.add('info-row');
-
+    
         const label = document.createElement('div');
         label.classList.add('info-label');
         label.innerHTML = `<p>${formatLabel(key)}</p>`;
-
+    
         const valueContainer = document.createElement('div');
         valueContainer.classList.add('info-value');
 
-        let formattedValue = value || "placeholder";
-        if (key === "budget" || key === "box_office") formattedValue = formatMoney(value); 
-        if (key === "running_time") formattedValue = `${formatNumber(value)} min`;
-
+    
         if (Array.isArray(value)) {
-            value.forEach(entry => {
-                const itemEntry = document.createElement('p');
-                itemEntry.textContent = entry.name || entry.title;
-                valueContainer.appendChild(itemEntry);
-            });
-        } else {
-            valueContainer.innerHTML = `<p>${formattedValue}</p>`;
-        }
+            const select = document.createElement("select");
+            select.id = formatLabel(key).replace(/\s+/g, '_').toLowerCase();
+            select.name = `${formatLabel(key).replace(/\s+/g, '_').toLowerCase()}s`;
+            select.multiple = true;
+    
+            // Ensure correct role matching
+            if (type == Movie) {
+                if (rolesMap[capitalizedKey]) {
+                    rolesMap[capitalizedKey].forEach(person => {
+                        const option = document.createElement("option");
+                        option.value = person.id;
+                        option.textContent = person.name;
+        
+                        // Select the option only if the person is already linked to the movie
+                        if (value.some(v => v.id === person.id)) {
+                            option.selected = true;
+                        }
+        
+                        select.appendChild(option);
+                    });
+                }
+            } else if (type == Person) {
+                console.log(capitalizedKey);
 
+                if (capitalizedKey == 'Movie') {
+                    const movies = mergeUniqueObjectsWithTags(value, moviesData.movies, "id");
+
+                    movies.forEach(entry => {
+                        const option = document.createElement("option");
+                        option.value = entry.id;
+                        option.textContent = entry.name || entry.title;
+
+                        if (entry.source == "selected") {
+                            option.selected = true;
+                        }
+                
+                        select.appendChild(option);
+                    })
+                } else if (capitalizedKey == 'Role') {
+                    const roles = mergeUniqueObjectsWithTags(value, rolesData.roles, "id");
+
+                    console.log(rolesData.roles);
+
+                    roles.forEach(entry => {
+                        const option = document.createElement("option");
+                        option.value = entry.id;
+                        option.textContent = entry.name || entry.title;
+
+                        if (entry.source == "selected") {
+                            option.selected = true;
+                        }
+                
+                        select.appendChild(option);
+                    })
+                } else {
+                    value.forEach(entry => {
+                        const option = document.createElement("option");
+                        option.value = entry.id;
+                        option.textContent = entry.name || entry.title;
+                        option.selected = true;
+                
+                        select.appendChild(option);
+                    })
+                }
+
+              
+            }
+
+            valueContainer.appendChild(select);
+        } else {
+            const input = document.createElement('input');
+            input.type = "text";
+            input.name = formatLabel(key).toLowerCase();
+            input.value = value || "placeholder";
+            valueContainer.appendChild(input);
+        }
+    
         row.appendChild(label);
         row.appendChild(valueContainer);
         infoContainer.appendChild(row);
     });
 
+    let capitalizedType = type.singular().charAt(0).toUpperCase() + type.singular().slice(1);
+
+    const buttonRow = document.createElement('div');
+    buttonRow.classList.add('button-row');
+
+    const updateButton = document.createElement('button');
+    updateButton.onclick = `updateRecord(${capitalizedType})`;
+    updateButton.classList.add(`update${capitalizedType}Btn`);
+    updateButton.innerText = 'Update';
+    buttonRow.appendChild(updateButton);
+
+    const deleteButton = document.createElement('button');
+    deleteButton.onclick = `deleteRecord(${capitalizedType})`;
+    deleteButton.classList.add(`delete${capitalizedType}Btn`);
+    deleteButton.innerText = 'Delete';
+    buttonRow.appendChild(deleteButton);
+
+    infoContainer.appendChild(buttonRow);
     recordCard.appendChild(infoContainer);
     buttonCardPair.appendChild(button);
     buttonCardPair.appendChild(recordCard);
     list.appendChild(buttonCardPair);
 };
+
 
 
 const generateRoleSelect = (roles) => {
