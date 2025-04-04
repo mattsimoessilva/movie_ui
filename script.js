@@ -48,7 +48,7 @@ class Role {
     }
 }
 
-const recordTypes = [Movie, Person, Role];
+const recordTypes = [Person, Role, Movie];
 
 document.addEventListener("click", (event) => {
     if (event.target.classList.contains("collapsible")) {
@@ -95,7 +95,7 @@ const cleanList = (type) => {
 
     if (list.hasChildNodes()) {
         [...list.children].forEach(child => {
-            if (!child.matches("h2")) { // Keep the <h2> title
+            if (!child.matches("h2")) { 
                 child.remove();
             }
         });
@@ -106,7 +106,7 @@ const cleanList = (type) => {
 
 const newRecord = (type) => {
     const form = document.querySelector(`.${type.singular()}-form`);
-    const inputs = form.querySelectorAll("input, select[multiple]");
+    const inputs = form.querySelectorAll("input, select[multiple], textarea");
 
     let recordData = {};
 
@@ -126,13 +126,8 @@ const newRecord = (type) => {
         }
     });
 
-    if (!recordData.name && !recordData.title) {
-        alert(`Please enter a valid ${type.singular()} name!`);
-        return;
-    }
-
     postRecord(type, recordData).then(() => {
-        updateAllRecordList();
+        updateAllRecordLists();
         if (type == Movie) {
             repopulatePersonSelect();
         } else if (type == Person) {
@@ -140,10 +135,42 @@ const newRecord = (type) => {
         } else if (type == Role) {
             repopulateRoleSelect();
         }
-        form.reset();
+        clearForm(`${type.singular()}-form`);
+    });
+};
+
+const editedRecord = (type) => {
+    const form = document.querySelector(`.${type.singular()}-update-form`);
+    const inputs = form.querySelectorAll("input, select[multiple], textarea");
+
+    let recordData = {};
+
+    inputs.forEach(input => {
+        if (input.type === "number") {
+            recordData[input.name] = parseFloat(input.value) || 0;
+        } else if (input.tagName === "SELECT" && input.multiple) {
+            if (type === Movie) {
+                recordData["people"] = (recordData["people"] || []).concat(
+                    Array.from(input.selectedOptions).map(option => option.value)
+                );
+            } else {
+                recordData[input.name] = Array.from(input.selectedOptions).map(option => option.value);
+            }
+        } else {
+            recordData[input.name] = input.value || "";
+        }
     });
 
-    alert(`${type.singular()} added!`);
+    updateRecord(type, recordData).then(() => {
+        updateAllRecordLists();
+        if (type == Movie) {
+            repopulatePersonSelect();
+        } else if (type == Person) {
+            repopulatePersonSelect();
+        } else if (type == Role) {
+            repopulateRoleSelect();
+        }
+    });
 };
 
 const updateAllRecordLists = async () => {
@@ -156,10 +183,10 @@ const updateAllRecordLists = async () => {
 
         recordTypes.forEach((type, index) => {
             const list = document.querySelector(`.${type.singular()}-list`);
-            list.innerHTML = ''; // Clear previous data
+            list.innerHTML = '';
 
             fetchedData[index][type.plural()].forEach(item => {
-                insertRecord(item, type, fetchedData[1], fetchedData[2]); // Pass people and roles
+                insertRecord(item, type, fetchedData[0], fetchedData[1], fetchedData[2]);
             });
         });
 
@@ -169,18 +196,17 @@ const updateAllRecordLists = async () => {
 };
 
 
-const clearForm = () => {
-    document.getElementById("newTitle").value = "";
-    document.getElementById("newPosterUrl").value = "";
-    document.getElementById("newRunningTime").value = "";
-    document.getElementById("newBudget").value = "";
-    document.getElementById("newBoxOffice").value = "";
-    document.getElementById("newReleaseYear").value = "";
+const clearForm = (className) => {
+    const container = document.getElementsByClassName(className)[0];
+    if (!container) {
+        return
+    }
 
-    document.querySelectorAll("select[multiple]").forEach(select => {
-        select.selectedIndex = -1;
-    });
+    container.querySelectorAll("input").forEach(input => input.value = "");
+    container.querySelectorAll("textarea").forEach(textarea => textarea.value = "");
+    container.querySelectorAll("select").forEach(select => select.selectedIndex = -1);
 };
+
 
 const postRecord = async (type, recordData) => {
     try {
@@ -196,6 +222,43 @@ const postRecord = async (type, recordData) => {
 
         const response = await fetch(`http://127.0.0.1:5000/${type.singular()}`, {
             method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`${type.singular()} successfully registered!`);
+            updateAllRecordLists();
+        } else {
+            alert(`Error: ${result.message}`);
+        }
+    } catch (error) {
+        console.error(`Error adding ${type.singular()}:`, error);
+        alert(`An error occurred while adding the ${type.singular()}.`);
+    }
+};
+
+const updateRecord = async (type, recordData) => {
+    try {
+        const formData = new FormData();
+
+        console.log('recordData:');
+        console.log(recordData);
+
+        Object.entries(recordData).forEach(([key, value]) => {
+            if (Array.isArray(value) && value.length > 0) {
+                value.forEach(item => formData.append(key, item));
+            } else if (value !== undefined && value !== null) {
+                formData.append(key, value);
+            }
+        });
+
+        console.log('formData:');
+        console.log(formData);
+
+        const response = await fetch(`http://127.0.0.1:5000/${type.singular()}`, {
+            method: "PUT",
             body: formData
         });
 
@@ -297,12 +360,12 @@ const formatLabel = (label) => {
 };
 
 const mergeUniqueObjectsWithTags = (arr1, arr2, key) => {
-    const merged = [...arr1, ...arr2]; // Combine arrays
-    const uniqueMap = new Map(merged.map(item => [item[key], item])); // Remove duplicates
+    const merged = [...arr1, ...arr2];
+    const uniqueMap = new Map(merged.map(item => [item[key], item]));
     
     return [...uniqueMap.values()].map(obj => ({
         ...obj,
-        source: arr1.some(item => item[key] === obj[key]) ? "selected" : "not-selected" // Tag source
+        source: arr1.some(item => item[key] === obj[key]) ? "selected" : "not-selected"
     }));
 };
 
@@ -339,13 +402,15 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
     const recordCard = document.createElement('div');
     recordCard.classList.add('record-card');
 
-    if (record.image_url) {
+    if (record.image_url !== undefined && record.image_url !== null) {
         recordCard.classList.add('two-column');
         const imageSlot = document.createElement('div');
         imageSlot.classList.add('image-slot');
         const image = document.createElement('img');
         image.classList.add('image');
-        image.src = record.image_url || 'https://www.rtb.cgiar.org/wp-content/uploads/2019/10/pix-vertical-placeholder-320x480.jpg';
+        const PERSON_PLACEHOLDER = "https://st2.depositphotos.com/4111759/12123/v/450/depositphotos_121233262-stock-illustration-male-default-placeholder-avatar-profile.jpg";
+        const MOVIE_PLACEHOLDER =  "https://critics.io/img/movies/poster-placeholder.png";
+        image.src = record.image_url || (record.type === "Person" ? MOVIE_PLACEHOLDER : PERSON_PLACEHOLDER);
         imageSlot.appendChild(image);
         recordCard.appendChild(imageSlot);
     }
@@ -353,13 +418,12 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
     const infoContainer = document.createElement('div');
     infoContainer.classList.add(`${type.singular()}-update-form`);
 
-    // Populate form fields
     Object.entries(record).forEach(([key, value]) => {
-        if (key === "id") return; // Skip ID field
-    
-        // Normalize key to match role names in rolesMap
-        const normalizedKey = key.replace(/s$/, ''); // 
-        let capitalizedKey = normalizedKey.charAt(0).toUpperCase() + normalizedKey.slice(1);
+        const normalizedKey = key.replace(/s$/, '').replace(/_/g, ' ');
+        const capitalizedKey = normalizedKey
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
 
         const row = document.createElement('div');
         row.classList.add('info-row');
@@ -378,15 +442,14 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
             select.name = `${formatLabel(key).replace(/\s+/g, '_').toLowerCase()}s`;
             select.multiple = true;
     
-            // Ensure correct role matching
             if (type == Movie) {
+
                 if (rolesMap[capitalizedKey]) {
                     rolesMap[capitalizedKey].forEach(person => {
                         const option = document.createElement("option");
                         option.value = person.id;
                         option.textContent = person.name;
         
-                        // Select the option only if the person is already linked to the movie
                         if (value.some(v => v.id === person.id)) {
                             option.selected = true;
                         }
@@ -395,8 +458,6 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
                     });
                 }
             } else if (type == Person) {
-                console.log(capitalizedKey);
-
                 if (capitalizedKey == 'Movie') {
                     const movies = mergeUniqueObjectsWithTags(value, moviesData.movies, "id");
 
@@ -413,8 +474,6 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
                     })
                 } else if (capitalizedKey == 'Role') {
                     const roles = mergeUniqueObjectsWithTags(value, rolesData.roles, "id");
-
-                    console.log(rolesData.roles);
 
                     roles.forEach(entry => {
                         const option = document.createElement("option");
@@ -443,15 +502,30 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
 
             valueContainer.appendChild(select);
         } else {
-            const input = document.createElement('input');
-            input.type = "text";
-            input.name = formatLabel(key).toLowerCase();
-            input.value = value || "placeholder";
-            valueContainer.appendChild(input);
+            if (capitalizedKey == 'Id') {
+                const input = document.createElement('input');
+                input.type = "text";
+                input.name = formatLabel(key).toLowerCase().replace(/\s+/g, "_");
+                input.value = value || '';
+                input.disabled = true;
+
+                valueContainer.appendChild(input);
+            } else {
+                const input = document.createElement('input');
+                input.type = "text";
+                input.name = formatLabel(key).toLowerCase().replace(/\s+/g, "_");
+                input.value = value || '';
+
+                valueContainer.appendChild(input);
+            }
         }
     
         row.appendChild(label);
         row.appendChild(valueContainer);
+
+        if (capitalizedKey == "Id") {
+            row.style.display = "none";
+        }
         infoContainer.appendChild(row);
     });
 
@@ -461,7 +535,7 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
     buttonRow.classList.add('button-row');
 
     const updateButton = document.createElement('button');
-    updateButton.onclick = `updateRecord(${capitalizedType})`;
+    updateButton.onclick = () => editedRecord(type);
     updateButton.classList.add(`update${capitalizedType}Btn`);
     updateButton.innerText = 'Update';
     buttonRow.appendChild(updateButton);
