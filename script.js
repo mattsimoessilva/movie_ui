@@ -76,8 +76,7 @@ const initializeRecords = async () => {
         let peopleData = await fetchRecords(Person);
         let moviesData = await fetchRecords(Movie);
 
-        generateRoleSelect(rolesData.roles);
-        generatePersonSelect(peopleData.people);
+        generatePersonSelect(peopleData.people, rolesData.roles);
 
         peopleData.people.forEach(item => insertRecord(item, Person, peopleData, rolesData, moviesData));
         moviesData.movies.forEach(item => insertRecord(item, Movie, peopleData, rolesData));
@@ -93,15 +92,17 @@ document.addEventListener('DOMContentLoaded', initializeRecords);
 const cleanList = (type) => {
     const list = document.querySelector(`.${type.singular()}-list`);
 
-    if (list.hasChildNodes()) {
-        [...list.children].forEach(child => {
-            if (!child.matches("h2")) { 
-                child.remove();
-            }
-        });
+    if (list) {
+
+        while (list.firstChild) {
+            list.removeChild(list.firstChild);
+        }
+
+        const header = document.createElement("h2");
+        header.textContent = `List of ${type.plural()}`;
+        list.appendChild(header);
     }
 };
-
 
 
 const newRecord = (type) => {
@@ -114,17 +115,14 @@ const newRecord = (type) => {
         if (input.type === "number") {
             recordData[input.name] = parseFloat(input.value) || 0;
         } else if (input.tagName === "SELECT" && input.multiple) {
-            if (type === Movie) {
-                recordData["people"] = (recordData["people"] || []).concat(
-                    Array.from(input.selectedOptions).map(option => option.value)
-                );
-            } else {
-                recordData[input.name] = Array.from(input.selectedOptions).map(option => option.value);
-            }
+            recordData[input.name] = Array.from(input.selectedOptions).map(option => option.value);
         } else {
             recordData[input.name] = input.value || "";
         }
     });
+
+    console.log('Record Data Now:')
+    console.log(recordData);
 
     postRecord(type, recordData).then(() => {
         updateAllRecordLists();
@@ -149,13 +147,7 @@ const editedRecord = (type) => {
         if (input.type === "number") {
             recordData[input.name] = parseFloat(input.value) || 0;
         } else if (input.tagName === "SELECT" && input.multiple) {
-            if (type === Movie) {
-                recordData["people"] = (recordData["people"] || []).concat(
-                    Array.from(input.selectedOptions).map(option => option.value)
-                );
-            } else {
-                recordData[input.name] = Array.from(input.selectedOptions).map(option => option.value);
-            }
+            recordData[input.name] = Array.from(input.selectedOptions).map(option => option.value);
         } else {
             recordData[input.name] = input.value || "";
         }
@@ -210,20 +202,23 @@ const clearForm = (className) => {
 
 const postRecord = async (type, recordData) => {
     try {
-        const formData = new FormData();
+        const jsonData = {};
 
         Object.entries(recordData).forEach(([key, value]) => {
             if (Array.isArray(value) && value.length > 0) {
-                value.forEach(item => formData.append(key, item));
+                jsonData[key] = value;
             } else if (value !== undefined && value !== null) {
-                formData.append(key, value);
+                jsonData[key] = value;
             }
         });
-
+        
         const response = await fetch(`http://127.0.0.1:5000/${type.singular()}`, {
             method: "POST",
-            body: formData
-        });
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(jsonData)
+        });   
 
         const result = await response.json();
 
@@ -241,25 +236,24 @@ const postRecord = async (type, recordData) => {
 
 const updateRecord = async (type, recordData) => {
     try {
-        const formData = new FormData();
-
-        console.log('recordData:');
-        console.log(recordData);
+        const jsonData = {};
 
         Object.entries(recordData).forEach(([key, value]) => {
             if (Array.isArray(value) && value.length > 0) {
-                value.forEach(item => formData.append(key, item));
+                jsonData[key] = value; 
             } else if (value !== undefined && value !== null) {
-                formData.append(key, value);
+                jsonData[key] = value; 
             }
         });
 
-        console.log('formData:');
-        console.log(formData);
+        console.log("JSON before sending:", JSON.stringify(jsonData, null, 2)); 
 
         const response = await fetch(`http://127.0.0.1:5000/${type.singular()}`, {
             method: "PUT",
-            body: formData
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(jsonData)
         });
 
         const result = await response.json();
@@ -277,19 +271,21 @@ const updateRecord = async (type, recordData) => {
 };
 
 
-const generatePersonSelect = (people) => {
+const generatePersonSelect = (people, roles) => {
+    
+    console.log('people:')
+    console.log(people);
+
     const form = document.querySelector('.movie-form'); 
     const submitButton = document.querySelector('.registerMovieBtn'); 
     const rolesMap = {};
 
-    people.forEach(person => {
-        person.roles.forEach(role => {
-            if (!rolesMap[role.name]) {
-                rolesMap[role.name] = [];
-            }
-            rolesMap[role.name].push(person);
-        });
+    roles.forEach(role => {
+        rolesMap[role.name] = [...people];
     });
+
+    console.log('rolesMap');
+    console.log(rolesMap);
 
     Object.entries(rolesMap).forEach(([roleName, rolePeople]) => {
         const formattedRoleName = formatLabel(roleName);
@@ -299,7 +295,7 @@ const generatePersonSelect = (people) => {
 
         const select = document.createElement("select");
         select.id = roleName.replace(/\s+/g, '_').toLowerCase();
-        select.name = `${roleName.replace(/\s+/g, '_').toLowerCase()}s`;
+        select.name = `${roleName.replace(/\s+/g, '_').toLowerCase()}`;
         select.multiple = true; 
 
         rolePeople.forEach(person => {
@@ -320,23 +316,11 @@ const repopulatePersonSelect = async () => {
 
     try {
         let peopleData = await fetchRecords(Person);
-        generatePersonSelect(peopleData.people);
+        let rolesData = await fetchRecords(Role);
+        generatePersonSelect(peopleData.people, rolesData.roles);
 
     } catch (error) {
         console.error("Error fetching records:", error);
-    }
-};
-
-const repopulateRoleSelect = async () => {
-    document.querySelectorAll('.person-form select').forEach(select => select.remove());
-    document.querySelectorAll('.person-form label').forEach(label => label.remove());
-
-    try {
-        let rolesData = await fetchRecords(Role);
-        generateRoleSelect(rolesData.roles);
-
-    } catch (error) {
-        console.error("Error fetching roles:", error);
     }
 };
 
@@ -375,18 +359,9 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
 
     if (rolesData && peopleData) {
         rolesData.roles.forEach(role => {
-            rolesMap[role.name] = []
-
-            peopleData.people.forEach(person => {
-                person.roles.forEach(personRole => {
-                    if (role.name == personRole.name) {
-                        rolesMap[role.name].push(person);
-                    }
-                })
-            })
-        })
+            rolesMap[role.name] = [...peopleData.people];
+        });
     }
-
 
     const list = document.querySelector(`.${type.singular()}-list`);
 
@@ -425,6 +400,10 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
 
+        if (capitalizedKey == 'Movie' || capitalizedKey == 'Role') {
+            return;
+        }
+
         const row = document.createElement('div');
         row.classList.add('info-row');
     
@@ -439,7 +418,7 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
         if (Array.isArray(value)) {
             const select = document.createElement("select");
             select.id = formatLabel(key).replace(/\s+/g, '_').toLowerCase();
-            select.name = `${formatLabel(key).replace(/\s+/g, '_').toLowerCase()}s`;
+            select.name = `${formatLabel(key).replace(/\s+/g, '_').toLowerCase()}`;
             select.multiple = true;
     
             if (type == Movie) {
@@ -555,28 +534,4 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
 
 
 
-const generateRoleSelect = (roles) => {
 
-    const form = document.querySelector('.person-form');
-    const submitButton = document.querySelector('.registerPersonBtn');
-    
-    const fieldName = 'Roles';
-
-    const label = document.createElement("label");
-    label.textContent = fieldName;
-
-    const select = document.createElement("select");
-    select.id = "role";
-    select.name = "roles";
-    select.multiple = true;
-
-    roles.forEach(role => {
-        const option = document.createElement("option");
-        option.value = role.id;
-        option.textContent = role.name;
-        select.appendChild(option);
-    });
-
-    form.insertBefore(label, submitButton);
-    form.insertBefore(select, submitButton);
-}
