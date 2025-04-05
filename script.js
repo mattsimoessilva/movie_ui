@@ -163,6 +163,7 @@ const deleteRecord = async (event, type) => {
         if (response.ok) {
             alert(`${type.singular()} successfully removed!`);
             updateAllRecordLists();
+            repopulatePersonSelect();
         } else {
             alert(`Error: ${result.message}`);
         }
