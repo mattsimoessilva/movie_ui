@@ -89,22 +89,6 @@ const initializeRecords = async () => {
 
 document.addEventListener('DOMContentLoaded', initializeRecords);
 
-const cleanList = (type) => {
-    const list = document.querySelector(`.${type.singular()}-list`);
-
-    if (list) {
-
-        while (list.firstChild) {
-            list.removeChild(list.firstChild);
-        }
-
-        const header = document.createElement("h2");
-        header.textContent = `List of ${type.plural()}`;
-        list.appendChild(header);
-    }
-};
-
-
 const newRecord = (type) => {
     const form = document.querySelector(`.${type.singular()}-form`);
     const inputs = form.querySelectorAll("input, select[multiple], textarea");
@@ -126,13 +110,7 @@ const newRecord = (type) => {
 
     postRecord(type, recordData).then(() => {
         updateAllRecordLists();
-        if (type == Movie) {
-            repopulatePersonSelect();
-        } else if (type == Person) {
-            repopulatePersonSelect();
-        } else if (type == Role) {
-            repopulateRoleSelect();
-        }
+        repopulatePersonSelect();
         clearForm(`${type.singular()}-form`);
     });
 };
@@ -155,13 +133,7 @@ const editedRecord = (event, type) => {
 
     updateRecord(type, recordData).then(() => {
         updateAllRecordLists();
-        if (type == Movie) {
-            repopulatePersonSelect();
-        } else if (type == Person) {
-            repopulatePersonSelect();
-        } else if (type == Role) {
-            repopulateRoleSelect();
-        }
+        repopulatePersonSelect();
     });
 };
 
@@ -211,7 +183,8 @@ const updateAllRecordLists = async () => {
 
         recordTypes.forEach((type, index) => {
             const list = document.querySelector(`.${type.singular()}-list`);
-            list.innerHTML = '';
+
+            list.querySelectorAll(".button-card-pair").forEach(element => element.remove());
 
             fetchedData[index][type.plural()].forEach(item => {
                 insertRecord(item, type, fetchedData[0], fetchedData[1], fetchedData[2]);
@@ -222,6 +195,7 @@ const updateAllRecordLists = async () => {
         console.error("Error updating all record lists:", error);
     }
 };
+
 
 
 const clearForm = (className) => {
@@ -347,8 +321,10 @@ const generatePersonSelect = (people, roles) => {
 };
 
 const repopulatePersonSelect = async () => {
-    document.querySelectorAll('.movie-form select').forEach(select => select.remove());
-    document.querySelectorAll('.movie-form label').forEach(label => label.remove());
+    document.querySelectorAll('.movie-form select').forEach(select => {
+        select.previousElementSibling?.tagName === "LABEL" && select.previousElementSibling.remove();
+        select.remove();
+    });
 
     try {
         let peopleData = await fetchRecords(Person);
