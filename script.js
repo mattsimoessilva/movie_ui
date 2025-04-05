@@ -137,8 +137,8 @@ const newRecord = (type) => {
     });
 };
 
-const editedRecord = (type) => {
-    const form = document.querySelector(`.${type.singular()}-update-form`);
+const editedRecord = (event, type) => {
+    const form = event.target.closest(`.${type.singular()}-update-form`);
     const inputs = form.querySelectorAll("input, select[multiple], textarea");
 
     let recordData = {};
@@ -164,6 +164,42 @@ const editedRecord = (type) => {
         }
     });
 };
+
+const deleteRecord = async (event, type) => {
+    try {
+        const form = event.target.closest(`.${type.singular()}-update-form`);
+        if (!form) {
+            alert("Form not found!");
+            return;
+        }
+
+        const id = form.querySelector('input[name="id"]');
+        if (!id) {
+            alert("ID input not found!");
+            return;
+        }
+
+        const response = await fetch(`http://127.0.0.1:5000/${type.singular()}?id=${id.value}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`${type.singular()} successfully removed!`);
+            updateAllRecordLists();
+        } else {
+            alert(`Error: ${result.message}`);
+        }
+    } catch (error) {
+        console.error(`Error removing ${type.singular()}:`, error);
+        alert(`An error occurred while removing the ${type.singular()}.`);
+    }
+};
+
 
 const updateAllRecordLists = async () => {
     try {
@@ -259,14 +295,14 @@ const updateRecord = async (type, recordData) => {
         const result = await response.json();
 
         if (response.ok) {
-            alert(`${type.singular()} successfully registered!`);
+            alert(`${type.singular()} successfully updated!`);
             updateAllRecordLists();
         } else {
             alert(`Error: ${result.message}`);
         }
     } catch (error) {
-        console.error(`Error adding ${type.singular()}:`, error);
-        alert(`An error occurred while adding the ${type.singular()}.`);
+        console.error(`Error updating ${type.singular()}:`, error);
+        alert(`An error occurred while updating the ${type.singular()}.`);
     }
 };
 
@@ -514,13 +550,13 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
     buttonRow.classList.add('button-row');
 
     const updateButton = document.createElement('button');
-    updateButton.onclick = () => editedRecord(type);
+    updateButton.onclick = (event) => editedRecord(event, type);
     updateButton.classList.add(`update${capitalizedType}Btn`);
     updateButton.innerText = 'Update';
     buttonRow.appendChild(updateButton);
 
     const deleteButton = document.createElement('button');
-    deleteButton.onclick = `deleteRecord(${capitalizedType})`;
+    deleteButton.onclick = (event) => deleteRecord(event, type);
     deleteButton.classList.add(`delete${capitalizedType}Btn`);
     deleteButton.innerText = 'Delete';
     buttonRow.appendChild(deleteButton);
