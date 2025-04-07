@@ -397,8 +397,8 @@ const insertRecord = (record, type, peopleData, rolesData, moviesData) => {
         const image = document.createElement('img');
         image.classList.add('image');
         const PERSON_PLACEHOLDER = "https://st2.depositphotos.com/4111759/12123/v/450/depositphotos_121233262-stock-illustration-male-default-placeholder-avatar-profile.jpg";
-        const MOVIE_PLACEHOLDER =  "https://critics.io/img/movies/poster-placeholder.png";
-        image.src = record.image_url || (record.type === "Person" ? MOVIE_PLACEHOLDER : PERSON_PLACEHOLDER);
+        const MOVIE_PLACEHOLDER = "https://critics.io/img/movies/poster-placeholder.png";
+        image.src = record.image_url || (type == Movie ? MOVIE_PLACEHOLDER : PERSON_PLACEHOLDER);        
         imageSlot.appendChild(image);
         recordCard.appendChild(imageSlot);
     }
